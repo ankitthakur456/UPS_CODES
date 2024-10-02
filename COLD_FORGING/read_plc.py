@@ -1,46 +1,47 @@
 import time
+import os
 from pyModbusTCP.client import ModbusClient
-import logging.config
+import logging
 
-logging.config.fileConfig('logging.config')
+
 log = logging.getLogger('UPS_log')
 
-IP_ADDRESS = '192.168.102.247'
-PORT = 510
-send_data = True
+
+class ModbusHelper:
+    def __init__(self, ip='192.168.2.1', port=502):
+        log.info(f"[+] Machine Params are : [{ip}]:[{port}]")
+        self.ip = ip
+        self.port = port
+
+    def connection(self):
+        c = ModbusClient(host=self.ip, port=self.port, unit_id=1, auto_open=True)
+        return c
 
 
-def Connection():
-    c = ModbusClient(host=IP_ADDRESS, port=PORT, unit_id=1, auto_open=True)
-    return c
+    def read_machine_status(self):
+        try:
+            for _ in range(5):
+                c = self.connection()
+                regs = c.read_coils(8192, 1)
+                log.info(f"[+] Got Machine data {regs}")
+                c.close()
+                if not regs:
+                    log.warning(f"[+] Got Machine data {regs}")
+                else:
+                    return regs[0]
+        except Exception as err:
+            log.error(f'[+] Error Machine disconnected {err}')
+        return None
 
 
-def Reading_data():
-    try:
-        c = Connection()
-        regs = c.read_coils(8192, 1)
-
-        log.info(f"values from register is {regs}")
-        c.close()
-        if not regs:
-            a = [0]
-            return a
-        else:
-            return regs
-    except Exception as err:
-        log.error(f'Error PLC disconnected {err}')
-
-
-def write_machine_off():
-    try:
-        c = Connection()
-        regs = c.write_single_coil(8193, 1)
-        regs2 = c.write_single_coil(8193, 0)
-        log.info(f"we have done writing of register {regs}")
-        log.info(f"we have done writing on register {regs2}")
-        return regs, regs2
-    except Exception as err:
-        log.error(f'Error PLC disconnected {err}')
-
-
-
+    def power_off_machine(self):
+        try:
+            c = self.connection()
+            for i in range(5):
+                log.info("[+] Trying to Turn Machine [OFF]")
+                if c.write_single_coil(8193, True):
+                    log.info(f"[+] Machine Stopped Successfully")
+                    return True
+        except Exception as err:
+            log.error(f'Error PLC disconnected {err}')
+        log.info("[-] Failed to Turn OFF the Machine....")

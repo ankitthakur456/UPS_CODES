@@ -4,6 +4,7 @@ import minimalmodbus
 import serial
 import serial.tools.list_ports
 import logging.config
+import requests
 
 logging.config.fileConfig('logging.config')
 log = logging.getLogger('UPS_log')
@@ -16,6 +17,26 @@ dirname = os.path.dirname(os.path.abspath(__file__))
 # reion Global Variables
 GL_SEND_DATA = True
 SAMPLE_RATE = 5
+HEADERS = {"Content-Type": "application/json"}
+
+EM_API = 'https://iot.ithingspro.cloud/ups/api/v1/forging/update_weight'
+
+METER_ID = ''
+LINE = ''
+
+
+def post_em_values(payload: dict):
+    if GL_SEND_DATA:
+        try:
+            send_req = requests.post(EM_API, json=payload, headers=HEADERS, timeout=2)
+            logging.info(payload)
+            logging.info(send_req.status_code)
+            logging.info(send_req.text)
+            send_req.raise_for_status()
+            return True
+        except Exception as e:
+            logging.info(f"[-] Error in sending data of trolley weight TO API, {e}")
+            return False
 
 
 # endregion
@@ -54,27 +75,26 @@ def initiate(slaveId):
 
 def get_em_values(unitId):
     mb_client = initiate(unitId)
-    for i in range(2):
+    for i in range(5):
         try:
-            register_data = mb_client.read_registers(3960, 4, 3), True
-            #register_data1 = mb_client.read_registers(3967, 1, 3), True
+            register_data = mb_client.read_registers(3960, 2, 3), True
             log.info(f'register data is {register_data}')
-            return register_data[0]
+            if register_data:
+                kwh_value = combine_cdab(*register_data)
+                return kwh_value
         except Exception as e:
             log.error(f"ERROR:{e}")
-
-
     return None
-
-
 # endregion
 
 
-
 if __name__ == '__main__':
-    while True:
-        a=get_em_values(1)
-        log.info(f'[++++] different device {a[0]}   and r2 is {a[1]}')
-        data1 = combine_cdab(a[0],a[1])
-        log.info(f'[++++] kwh power data is {data1}')
-        time.sleep(5)
+    try:
+        while True:
+            a=get_em_values(1)
+            log.info(f'[++++] different device {a[0]}   and r2 is {a[1]}')
+            data1 = combine_cdab(a[0],a[1])
+            log.info(f'[++++] kwh power data is {data1}')
+            time.sleep(5)
+    except Exception as e:
+        log.error(f"[-] Error While running program {e}")

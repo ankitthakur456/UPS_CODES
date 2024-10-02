@@ -1,17 +1,23 @@
 import serial.tools.list_ports
 import serial
-import logging.config
+# import logging.config
 import re
 import time
+import os
 import logging
 
-logging.config.fileConfig('logging.config')
+if not os.path.isdir("./logs"):
+    print("[-] logs directory doesn't exists")
+    os.mkdir("./logs")
+    print("[+] Created logs dir successfully")
+# logging.config.fileConfig('logging.config')
 log = logging.getLogger('UPS_log')
 
-ports = serial.tools.list_ports.comports()
-port = [p.device for p in ports if "USB" in p.hwid or "ttyUSB" in p.device]
-print(port)
-PORT_WT = port[0]
+# ports = serial.tools.list_ports.comports()
+# port = [p.device for p in ports if "USB" in p.hwid or "ttyUSB" in p.device]
+# print(port)
+# PORT_WT = port[0]
+PORT_WT = '/dev/serial/by-id/usb-1a86_USB2.0-Ser_-if00-port0'
 log.info(PORT_WT)
 wt_ser = serial.Serial(
     port=PORT_WT,
@@ -37,8 +43,8 @@ def read_weight():
         weight = weight.decode('utf-8', errors='replace')
         weight = re.sub(r"[^\d\.]", "", weight)
         weight = float(weight)
-        print(f"Got weight data --- {weight}")
-        return weight
+        print(f"Got weight data --- {weight*10}")
+        return weight * 10
     except Exception:
         try:
             time.sleep(2)
@@ -64,8 +70,8 @@ def read_weight():
             weight = weight.decode("utf-8")
             weight = re.sub(r"[^\d\.]", "", weight)
             weight = float(weight)
-            print(f"Got weight data --- {weight}")
-            return weight
+            print(f"Got weight data --- {weight*10}")
+            return weight * 10
         except Exception as e:
             print(f'ERROR: {e} Error in opening weight serial port')
             return 0

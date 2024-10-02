@@ -1,6 +1,11 @@
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 import logging
+import os
 
+if not os.path.isdir("./logs"):
+    print("[-] logs directory doesn't exists")
+    os.mkdir("./logs")
+    print("[+] Created logs dir successfully")
 # Configure logging
 logging.basicConfig()
 log = logging.getLogger()
@@ -10,7 +15,7 @@ def read_energy_meter():
     # Set up the Modbus RTU client
     client = ModbusClient(
         method='rtu',          # Communication method: RTU
-        port='/dev/ttyUSB1',           # Replace with your serial port, e.g., COM4 or /dev/ttyUSB0
+        port='/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB0PN5N1-if00-port0',           # Replace with your serial port, e.g., COM4 or /dev/ttyUSB0
         baudrate=19200,         # Replace with your baud rate
         parity='E',            # Parity: None, Even, Odd
         stopbits=1,            # Stop bits
