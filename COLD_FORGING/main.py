@@ -269,8 +269,8 @@ def main():
     log.info("[+] Main function started")
     while True:
         # sensor_data()
-        # weight = read_weight()
-        # log.info(f"[+] Trolly Weight is [{weight}]")
+        weight = read_weight()
+        log.info(f"[+] Trolly Weight is [{weight}]")
         if AMQP_DATA == "Send Trolley Weight":
             # trying to send the Trolley Weight
             try:
@@ -287,13 +287,13 @@ def main():
                 log.error(f'error in reading weight {e}')
                 time.sleep(1)
 
-        elif AMQP_DATA == "TROLLEY CHANGED":
+        elif AMQP_DATA in ["TROLLEY CHANGED", "TROLLEY CANCELLED"]:
             FL_PRODUCTION_START = True
             GL_LAST_PROD_SEND_TIME = time.time()
             GL_PREV_WEIGHT = None
-
-        elif AMQP_DATA == "TROLLEY CANCELLED":
-            pass
+        #
+        # elif AMQP_DATA == "TROLLEY CANCELLED":
+        #     pass
 
         elif AMQP_DATA in ["COMPLETE WORK ORDER", "PAUSE PRODUCTION"] :
             # if work order is complete or user has requested to change the bin we will stop sending the production data
